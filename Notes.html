@@ -97,47 +97,89 @@ window.Quarto = {
 <p><strong>Spring 2025</strong></p>
 </div>
 <hr>
-<p>Insert overview blurb</p>
-<section id="network-depth" class="level3">
-<h3 class="anchored" data-anchor-id="network-depth">Network Depth</h3>
-<p>Talk about how deeper networks are not always better</p>
+<p>We have now seen the basic building blocks of how Convolution Networks are constructed. As a review, refer to the image below.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="BasicCNN.png" class="img-fluid figure-img"></p>
+<figcaption>Figure 1</figcaption>
+</figure>
+</div>
+<p>Now, we can dive into the world of modern CNN architectures and how they have solved various challenges in the industry by expanding on this basic architecture. While we can continue to use the architecture we have learned so far and stack our CNN to create deep structure, performance varies wildly on various choices such as hyperparameters and architecture design.</p>
+<p>The majority of these networks’ success is measured in the ImageNet classification competition, in which a variety of innovations have iteratively improve scores overtime. We will overview several of the famous architectures throughout time and understand the conclusions that can be made from their innovations.</p>
+<section id="network-depth" class="level2">
+<h2 class="anchored" data-anchor-id="network-depth">1 Network Depth</h2>
+<p>With the introduction of AlexNet, there was a first major breakthrough of CNNs within computer vision. The team behind AlexNet achieved exceedingly great performance in the ImageNet competition of 2012. AlexNet demonstrated that features such as edges and structures within images can be inherently learned by the model through a deep layer of networks. The network itself was trained using high quality compute and GPUs over hundreds of epochs.</p>
+<p>AlexNet offered many improvements to its predecessor, LeNet, which differentiated it as the new go-to CNN architecture. The team had implemented dropout to improve the accuracy of the model, as well as training optimizations through the ReLU activitation function. However, AlexNet’s architecture required large matrices of size 6400 x 4096 and 4096 x 4096, presenting a nontrivial amount of learnable parameters bottlenecking training.</p>
+<div data-align="center">
+<img src="AlexNet.png" alt="AlexNet architecture" width="300" style="display:block; margin:auto;">
+<p align="center">
+<em>Figure: AlexNet architecture from Chapter 8 of <a href="https://d2l.ai/chapter_convolutional-modern/alexnet.html">Dive into Deep Learning</a>.</em>
+</p>
+</div>
+<p>As a result of AlexNet’s success, many competitors came to the conclusion that achieving better performance in the ImageNet competition was simple. Just make the network deeper! But in reality, we will quickly learn that deeper networks, while offering some benefits, are not always the best way forward.</p>
+<p>As the network becomes deeper and more complicated, the amount of compute and data required grows quickly. Hardware and data limitations have always been a reality, and this was especially prevalent during this early time period. Furthermore, just increasing network depth does not guarantee better performance. For example, a 56 layer CNN had higher training and test error than a 20 layer CNN on the CIFAR-10 dataset [He et al., 2016].</p>
+<p>But why would a deeper network cause achieve higher training error? Let’s take a look at the gradient equation used during backpropagation.</p>
+<p><span id="eq-vanishing-gradient"><span class="math display">\[
+\frac{\delta z}{\delta z_i} = \frac{\delta z}{\delta z_{n-1}} \frac{\delta z_{n-1}}{\delta z_{n-2}} \cdots \frac{\delta z_{i+1}}{\delta z_i}
+\tag{1}\]</span></span></p>
+<p>Taking a look at this equation, we can see that as the network gets deeper so does the update equation. Now, imagine if each of these terms <span class="math inline">\(\frac{\delta z_{i+1}}{\delta z_i} &lt;&lt; 1\)</span>. Such a small value will compound overtime and cause the overall gradient to become exponentially smaller, ultimately causing it to approach 0. Such a low gradient will then cause the weights to not be updated properly, thus causing the poor training error that is observed in these deeper networks.</p>
 </section>
-<section id="googlenetinception-net" class="level3">
-<h3 class="anchored" data-anchor-id="googlenetinception-net">GoogLeNet/Inception Net</h3>
-<p>Mention image net classification challenge, talk about google net and the inception module</p>
-<section id="inception-module" class="level4">
-<h4 class="anchored" data-anchor-id="inception-module">Inception Module</h4>
-<p>Alternatively have a subheading deep dive into the inception module and how it does dim red</p>
+<section id="googlenetinception-net" class="level2">
+<h2 class="anchored" data-anchor-id="googlenetinception-net">2 GoogLeNet/Inception Net</h2>
+<p>In response to AlexNet’s limitations, Google challenged a group of researchers to develop an ultra efficient computer vision model that has a limited amount of resources available, codenamed InceptionNet from the quote in Inception “We Need to go Deeper”!</p>
+<p>GoogLeNet was a major leap forward in architecture design, and its core contribution lies in efficiency through parallelism. The <strong>Inception module</strong> is what allows GoogLeNet to extract multi-scale features simultaneously, capturing both fine and coarse patterns in images. These modules or blocks are then stacked within the architecture, performing better than its predecessors.</p>
+<section id="the-inception-module" class="level3">
+<h3 class="anchored" data-anchor-id="the-inception-module">2.1 The Inception Module</h3>
+<p>The Inception block combines multiple types of filters in parallel:</p>
+<ul>
+<li><strong>1×1 convolutions</strong> for dimensionality reduction and non-linearity,</li>
+<li><strong>3×3 and 5×5 convolutions</strong> for mid- and large-scale feature extraction,</li>
+<li><strong>3×3 max pooling</strong> for capturing spatial invariances.</li>
+</ul>
+<p>These outputs are then <strong>concatenated</strong> along the channel dimension.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="InceptionBlock.png" class="img-fluid figure-img"></p>
+<figcaption>Fig 2.1 Inception Block</figcaption>
+</figure>
+</div>
+<p>A key innovation used in GoogleNet was the 1x1 convolutions. This convolution allows the architecture to reduce the number of channels and dimensions of the image, while maintaining the individual values per channel. Given an image of size WxHxC, applying a kernel of 1x1xN will produce an output of size WxHxN. Thus, if N &lt; C we are essentially lowering the parameter count through channel reduction. We encourage you to figure out how this happens!</p>
 </section>
-<section id="resnet" class="level4">
-<h4 class="anchored" data-anchor-id="resnet">ResNet</h4>
+<section id="googlenet-innovations" class="level3">
+<h3 class="anchored" data-anchor-id="googlenet-innovations">GoogleNet Innovations</h3>
+<ol type="1">
+<li><strong>Parameter Efficiency</strong>: Despite being 22 layers deep, GoogLeNet used fewer parameters than AlexNet by aggressively using 1×1 convolutions.</li>
+<li><strong>Improved Representational Power</strong>: Multiple receptive fields allowed each block to capture a wide range of features.</li>
+<li><strong>Auxiliary Classifiers</strong>: Intermediate outputs were added during training as auxiliary losses to combat vanishing gradients and improve convergence.</li>
+</ol>
+<p>Despite the gains of GoogLeNet, it had some limitations. The manual design of Inception modules required careful engineering. Furthermore, while it was deeper and more efficient, training very deep networks still ran into optimization problems like vanishing gradients.</p>
+<p>This led to the next major innovation: ResNet, which enabled the successful training of extremely deep networks through a simple but powerful idea — <em>residual connections</em>.</p>
 </section>
 </section>
 <section id="resnet-residual-network" class="level2">
-<h2 class="anchored" data-anchor-id="resnet-residual-network">ResNet (Residual Network)</h2>
+<h2 class="anchored" data-anchor-id="resnet-residual-network">3 ResNet (Residual Network)</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="resnet.png" class="img-fluid figure-img"></p>
-<figcaption>ResNet Diagram</figcaption>
+<figcaption>Figure 3.1</figcaption>
 </figure>
 </div>
 <p>ResNet, or <strong>Residual Network</strong>, is a type of deep neural network architecture introduced by <strong>Kaiming He et al.</strong> in 2015. It was designed to address the <strong>vanishing gradient problem</strong> in very deep networks by introducing <strong>skip connections</strong> (also called <strong>residual connections</strong>).</p>
-<hr>
 <section id="important-note" class="level3">
 <h3 class="anchored" data-anchor-id="important-note">Important Note</h3>
-<p>From here on out, this is what we will be abstracting a convolutional layer to be this: <img src="Conv_Layer_abstraction.jpeg" class="img-fluid" alt="Conv Abstraction Diagram"></p>
-<hr>
+<p>From here on out, this is what we will be abstracting a convolutional layer to be:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Conv_Layer_abstraction.jpeg" class="img-fluid figure-img"></p>
+<figcaption>Figure 3.2</figcaption>
+</figure>
+</div>
 </section>
 <section id="key-idea" class="level3">
 <h3 class="anchored" data-anchor-id="key-idea">Key Idea</h3>
-<p>The main innovation of ResNet is the <strong>residual block</strong>, where the input is passed directly to a deeper layer, skipping one or more layers in between.</p>
-<p>This allows gradients to flow more easily during backpropagation, enabling <strong>very deep networks</strong> (e.g., ResNet-50, ResNet-101, ResNet-152).</p>
-<hr>
-</section>
-<section id="what-is-a-residual-block" class="level3">
-<h3 class="anchored" data-anchor-id="what-is-a-residual-block">What is a Residual Block?</h3>
-<p>A <strong>residual block</strong> is the core component of a ResNet (Residual Network). It enables the training of <strong>very deep neural networks</strong> by allowing information (and gradients) to <strong>flow directly across layers</strong> via <strong>skip connections</strong>.</p>
-<hr>
+<p>The main innovation of ResNet is the residual block, where the input is passed directly to a deeper layer, skipping one or more layers in between.</p>
+<p>This allows gradients to flow more easily during backpropagation, enabling very deep networks (e.g., ResNet-50, ResNet-101, ResNet-152).</p>
+<p>A residual block is the core component of a ResNet (Residual Network). It enables the training of very deep neural networks by allowing information (and gradients) to flow directly across layers via skip connections.</p>
 <section id="structure-of-a-residual-block" class="level4">
 <h4 class="anchored" data-anchor-id="structure-of-a-residual-block">Structure of a Residual Block</h4>
 <p>A basic residual block consists of:</p>
@@ -157,7 +199,7 @@ window.Quarto = {
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="Plain_Layer.jpeg" class="img-fluid figure-img"></p>
-<figcaption>Plain Block Diagram</figcaption>
+<figcaption>Figure 3.3</figcaption>
 </figure>
 </div>
 <p>Where:</p>
@@ -172,23 +214,13 @@ window.Quarto = {
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="Residual_Block.jpeg" class="img-fluid figure-img"></p>
-<figcaption>Residual Block Diagram</figcaption>
+<figcaption>Figure 3.4</figcaption>
 </figure>
 </div>
 <p>This is called a <strong>skip connection</strong> or <strong>residual connection</strong>, because it “skips over” the function <code>F</code> and adds the original input <code>a</code> directly to the output.</p>
-<hr>
 <section id="why-this-helps-with-the-vanishing-gradient-problem" class="level3">
 <h3 class="anchored" data-anchor-id="why-this-helps-with-the-vanishing-gradient-problem">Why This Helps with the Vanishing Gradient Problem</h3>
-<section id="the-vanishing-gradient-problem" class="level4">
-<h4 class="anchored" data-anchor-id="the-vanishing-gradient-problem">The Vanishing Gradient Problem</h4>
-<p>When training very deep networks, gradients (which are used to update weights via backpropagation) can become <strong>very small</strong> as they pass backward through many layers. This causes earlier layers to train very slowly — or not at all.</p>
-<p>In mathematical terms, if you keep multiplying small derivatives (like &lt; 1) across dozens or hundreds of layers, the final product (gradient) can approach zero:</p>
-<p><span class="math display">\[
-\frac{∂L}{∂w} = \frac{∂L}{∂z_n} \times \frac{∂z_n}{∂z_{n-1}} \times \cdots \times \frac{∂z_2}{∂z_1} \times \frac{∂z_1}{∂w}
-\]</span></p>
-</section>
-<section id="how-resnets-solve-this" class="level4">
-<h4 class="anchored" data-anchor-id="how-resnets-solve-this">How Resnets solve this</h4>
+<p>As shown in equation <a href="#eq-vanishing-gradient" class="quarto-xref">Equation&nbsp;1</a>, deeper networks cause gradients to shrink exponentially.</p>
 <p>With residual connections, each layer’s output is <span class="math inline">\(z = F(a) + a\)</span>, so during backpropagation, the gradient becomes:</p>
 <p><span class="math display">\[ \frac{∂L}{∂a} = \frac{∂L}{∂z} \times \left( \frac{∂F(a)}{∂a} + I \right) \]</span></p>
 <p>Where <span class="math inline">\(I\)</span> is the identity matrix from the derivative of <span class="math inline">\(a\)</span> (since <span class="math inline">\(∂(a)/∂a = I\)</span>).</p>
@@ -198,28 +230,15 @@ window.Quarto = {
 <li>This helps <strong>preserve gradient magnitude</strong>, preventing them from vanishing.</li>
 <li>As a result, <strong>deep networks can be trained effectively</strong> without performance degradation.</li>
 </ul>
-<hr>
 </section>
-</section>
-<section id="summary" class="level3">
-<h3 class="anchored" data-anchor-id="summary">Summary</h3>
-<ul>
-<li>Regular block: <span class="math inline">\(z = F(a)\)</span> → gradients can vanish.</li>
-<li>Residual block: <span class="math inline">\(z = F(a) + a\)</span> → gradients include both <span class="math inline">\(∂F(a)\)</span> and the identity path.</li>
-<li>Skip connections create <strong>highway routes</strong> for gradient flow.</li>
-<li>This enables the successful training of networks with <strong>50, 100, or even 1000+ layers</strong>.</li>
-</ul>
-</section>
-</section>
-<section id="stochastic-depth" class="level1">
-<h1>Stochastic Depth</h1>
+<section id="stochastic-depth" class="level2">
+<h2 class="anchored" data-anchor-id="stochastic-depth">4 Stochastic Depth</h2>
 <blockquote class="blockquote">
 <p><em>“Can we train <em>very</em> deep ResNets without paying the full computational cost at every iteration?”</em><br>
 <strong>Stochastic depth</strong> answers <em>yes</em> by <strong>randomly dropping entire residual blocks during training</strong> — making the network shallower on‑the‑fly, yet keeping its full depth at inference.</p>
 </blockquote>
-<hr>
 <section id="why-do-we-need-stochastic-depth" class="level3">
-<h3 class="anchored" data-anchor-id="why-do-we-need-stochastic-depth">1  Why Do We Need Stochastic Depth?</h3>
+<h3 class="anchored" data-anchor-id="why-do-we-need-stochastic-depth">4.1 Why Do We Need Stochastic Depth?</h3>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 59%">
@@ -248,19 +267,14 @@ window.Quarto = {
 </table>
 <p><strong>Insight:</strong> We <em>already</em> know ResNets work because the identity skip path lets the network behave like an ensemble of shallower sub‑networks.<br>
 <em>So why not explicitly <strong>train</strong> an ensemble of these shallower nets?</em></p>
-<hr>
-</section>
-<section id="highlevel-idea" class="level3">
-<h3 class="anchored" data-anchor-id="highlevel-idea">2  High‑Level Idea</h3>
 <ol type="1">
 <li><strong>During training</strong> each residual block is <strong>dropped</strong> (skipped) with probability <span class="math inline">\(p_l\)</span>, where <span class="math inline">\(l\)</span> is the index of the residual block.</li>
 <li><strong>During inference</strong> <em>all</em> blocks are kept (i.e.&nbsp;the <strong>full depth</strong> is used).</li>
 <li>To keep the expected activations consistent, we <strong>scale</strong> surviving blocks.</li>
 </ol>
-<hr>
 </section>
 <section id="notation" class="level3">
-<h3 class="anchored" data-anchor-id="notation">3  Notation</h3>
+<h3 class="anchored" data-anchor-id="notation">4.2 Notation</h3>
 <p>Let’s recall the basic structure of a residual block. As discussed earlier:</p>
 <p><span class="math display">\[
 z = F(a) + a
@@ -296,10 +310,8 @@ z = (1 - p) \cdot F(a) + a
 \]</span></p>
 <p>This ensures that the <strong>expected output</strong> of the block is consistent between training and test time.</p>
 </section>
-<section id="stochastic-depth-formulation" class="level3">
-<h3 class="anchored" data-anchor-id="stochastic-depth-formulation">4  Stochastic Depth Formulation</h3>
-<section id="probability-scheduling" class="level4">
-<h4 class="anchored" data-anchor-id="probability-scheduling">4.1&nbsp;&nbsp;Probability Scheduling</h4>
+<section id="probability-scheduling" class="level3">
+<h3 class="anchored" data-anchor-id="probability-scheduling">4.3&nbsp;&nbsp;Probability Scheduling</h3>
 <p>A common way to define the drop probability <span class="math inline">\(p\)</span> for each layer is to make it <strong>increase linearly with depth</strong>. For a network with <span class="math inline">\(L\)</span> residual blocks, the drop probability for the <span class="math inline">\(l^{\text{th}}\)</span> block is:</p>
 <p><span class="math display">\[
 p_l = \frac{l}{L} \cdot p_{\text{max}}
@@ -310,21 +322,18 @@ p_l = \frac{l}{L} \cdot p_{\text{max}}
 <li><span class="math inline">\(l\)</span> is the block index (starting from 1).</li>
 </ul>
 <p>This means <strong>early layers are kept more often</strong>, and <strong>deeper layers are dropped more often</strong> during training — which aligns well with how gradients behave in deep networks.</p>
-<hr>
 </section>
-<section id="scaling-for-inference" class="level4">
-<h4 class="anchored" data-anchor-id="scaling-for-inference">4.2&nbsp;&nbsp;Scaling for Inference</h4>
+<section id="scaling-for-inference" class="level3">
+<h3 class="anchored" data-anchor-id="scaling-for-inference">4.4&nbsp;&nbsp;Scaling for Inference</h3>
 <p>During <strong>inference</strong>, all blocks are used. To maintain consistency with training-time activations, we scale the residual output by the <strong>expected keep probability</strong> ( 1 - p ):</p>
 <p><span class="math display">\[
 z = (1 - p) \cdot F(a) + a
 \tag{2}
 \]</span></p>
 <p>This ensures that the <strong>expected value of the output</strong> matches what the model saw during training.</p>
-<hr>
-</section>
 </section>
 <section id="backpropagation-sketch" class="level3">
-<h3 class="anchored" data-anchor-id="backpropagation-sketch">5  Backpropagation Sketch</h3>
+<h3 class="anchored" data-anchor-id="backpropagation-sketch">4.5  Backpropagation Sketch</h3>
 <p>In stochastic depth, <strong>only the residual blocks that are kept (i.e., not dropped)</strong> contribute to the gradient during training.</p>
 <p>Let:</p>
 <ul>
@@ -343,10 +352,9 @@ z = (1 - p) \cdot F(a) + a
 \end{cases}
 \]</span></p>
 <p>Only the active blocks receive gradients and are updated. As a result, each training batch effectively updates a <strong>random sub-network</strong> — acting like a built-in <strong>model ensemble</strong> and a form of <strong>strong regularization</strong>.</p>
-<hr>
 </section>
 <section id="intuition-analogy" class="level3">
-<h3 class="anchored" data-anchor-id="intuition-analogy">6  Intuition &amp; Analogy</h3>
+<h3 class="anchored" data-anchor-id="intuition-analogy">4.6  Intuition &amp; Analogy</h3>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 20%">
@@ -376,20 +384,11 @@ z = (1 - p) \cdot F(a) + a
 <blockquote class="blockquote">
 <p>Think of it as <strong>“Drop‑ResBlocks”</strong> instead of “Drop‑Neurons”.</p>
 </blockquote>
-<hr>
-</section>
-<section id="practical-impact" class="level3">
-<h3 class="anchored" data-anchor-id="practical-impact">7  Practical Impact</h3>
-<ul>
-<li><strong>Faster training</strong> — fewer blocks <span class="math inline">\(\Rightarrow\)</span> shorter forward/backward pass per iteration.</li>
-<li><strong>Better generalization</strong> — acts like averaging an exponential number of shallower ResNets.</li>
-<li><strong>Ease of implementation</strong> — only a few lines in popular DL libraries.</li>
-</ul>
-<hr>
+<p>Overall stochastic depth leads to faster training as fewer blocks result in shorter forward/backward pass per iteration. They also have better generalization by acting as an average of an exponential number of shallower ResNets.</p>
 </section>
 </section>
-<section id="densenet" class="level1">
-<h1>DenseNet</h1>
+<section id="densenet" class="level2">
+<h2 class="anchored" data-anchor-id="densenet">5 DenseNet</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="Densenet.png" class="img-fluid figure-img"></p>
@@ -400,9 +399,8 @@ z = (1 - p) \cdot F(a) + a
 <p><em>“What if, instead of <strong>adding</strong> features like in ResNets, we simply <strong>concatenate</strong> them so every layer has direct access to all earlier information?”</em><br>
 <strong>DenseNets</strong> answer <em>yes</em> by <strong>densely connecting</strong> each layer to <strong>every other</strong> layer in a feed-forward fashion, dramatically improving information and gradient flow.</p>
 </blockquote>
-<hr>
 <section id="why-do-we-need-densenets" class="level3">
-<h3 class="anchored" data-anchor-id="why-do-we-need-densenets">1 Why Do We Need DenseNets?</h3>
+<h3 class="anchored" data-anchor-id="why-do-we-need-densenets">5.1 Why Do We Need DenseNets?</h3>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 55%">
@@ -430,10 +428,9 @@ z = (1 - p) \cdot F(a) + a
 </tbody>
 </table>
 <p><strong>Insight:</strong> If each layer could <strong>see</strong> all earlier feature maps, it could <strong>reuse</strong> them instead of relearning similar filters, while gradients would flow through many <strong>short paths</strong>.</p>
-<hr>
 </section>
 <section id="high-level-idea" class="level3">
-<h3 class="anchored" data-anchor-id="high-level-idea">2 High-Level Idea</h3>
+<h3 class="anchored" data-anchor-id="high-level-idea">5.2 High-Level Idea</h3>
 <ol type="1">
 <li><strong>Dense Connectivity:</strong> In a DenseNet, each layer <span class="math inline">\(l\)</span> receives as input the <strong>concatenation</strong> of the feature maps produced by <strong>all preceding layers</strong>:</li>
 </ol>
@@ -455,10 +452,9 @@ z_l = H_l(a_l)
 <p>where <span class="math inline">\(H_l\)</span> is typically <strong>BatchNorm → ReLU → 3×3 Conv</strong>.</p></li>
 <li><p><strong>Linear growth:</strong> The number of new feature maps added at each layer is a small <strong>growth rate</strong> <span class="math inline">\(k\)</span>.</p></li>
 </ol>
-<hr>
 </section>
 <section id="notation-1" class="level3">
-<h3 class="anchored" data-anchor-id="notation-1">3 Notation</h3>
+<h3 class="anchored" data-anchor-id="notation-1">5.3 Notation</h3>
 <ul>
 <li><span class="math inline">\(z_0\)</span>: initial input (e.g., output of a stem convolution layer)</li>
 <li><span class="math inline">\(a_l\)</span>: concatenated input to layer <span class="math inline">\(l\)</span></li>
@@ -474,10 +470,9 @@ a_{l+1} = [a_l, z_l] \quad \text{for } l = 0, \dots, L-1
 <p><span class="math display">\[
 \text{Channels} = \text{input channels} + k \cdot L
 \]</span></p>
-<hr>
 </section>
 <section id="dense-block-formulation" class="level3">
-<h3 class="anchored" data-anchor-id="dense-block-formulation">4 Dense Block Formulation</h3>
+<h3 class="anchored" data-anchor-id="dense-block-formulation">5.4 Dense Block Formulation</h3>
 <p>Inside a dense block:</p>
 <p><span class="math display">\[
 z_l = H_l(a_l; w_l), \qquad a_{l+1} = [a_l, z_l]
@@ -489,10 +484,9 @@ To prevent memory from growing unboundedly, <strong>transition layers</strong> a
 \]</span></p>
 <p>The 1×1 convolution acts as a compression step, reducing the number of channels.<br>
 This is often done with a compression factor <span class="math inline">\(\theta_{\text{comp}} \in (0, 1]\)</span>.</p>
-<hr>
 </section>
 <section id="backpropagation-sketch-1" class="level3">
-<h3 class="anchored" data-anchor-id="backpropagation-sketch-1">5 Backpropagation Sketch</h3>
+<h3 class="anchored" data-anchor-id="backpropagation-sketch-1">5.5 Backpropagation Sketch</h3>
 <p>Gradients flow through <strong>multiple direct paths</strong> due to concatenation:</p>
 <ol type="1">
 <li><strong>Local path</strong>: layer <span class="math inline">\(l\)</span> contributes to <span class="math inline">\(z_l\)</span> via <span class="math inline">\(w_l\)</span></li>
@@ -509,10 +503,9 @@ This is often done with a compression factor <span class="math inline">\(\theta_
 \frac{\partial L}{\partial a_m} \cdot \frac{\partial a_m}{\partial z_l}
 \]</span></p>
 <p>This design ensures <strong>better gradient flow</strong> and <strong>deep supervision</strong>.</p>
-<hr>
 </section>
 <section id="intuition-analogy-1" class="level3">
-<h3 class="anchored" data-anchor-id="intuition-analogy-1">6 Intuition &amp; Analogy</h3>
+<h3 class="anchored" data-anchor-id="intuition-analogy-1">5.6 Intuition &amp; Analogy</h3>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 15%">
@@ -546,29 +539,40 @@ This is often done with a compression factor <span class="math inline">\(\theta_
 <blockquote class="blockquote">
 <p>DenseNets behave like <strong>feature reuse engines</strong>, where each layer adds only new, complementary information.</p>
 </blockquote>
-<hr>
 </section>
-<section id="practical-impact-1" class="level3">
-<h3 class="anchored" data-anchor-id="practical-impact-1">7 Practical Impact</h3>
+<section id="practical-impact" class="level3">
+<h3 class="anchored" data-anchor-id="practical-impact">5.7 Practical Impact</h3>
 <ul>
 <li><strong>Parameter-efficient</strong>: fewer total weights compared to ResNets of similar accuracy</li>
 <li><strong>Strong regularization</strong>: encourages feature reuse and reduces overfitting</li>
 <li><strong>Improved gradient flow</strong>: multiple short paths to output</li>
 <li><strong>Memory considerations</strong>: more feature maps → use compression and checkpointing</li>
 </ul>
-<hr>
 </section>
-<section id="reference" class="level3">
-<h3 class="anchored" data-anchor-id="reference">8 Reference</h3>
+</section>
+<section id="summary-of-models" class="level2">
+<h2 class="anchored" data-anchor-id="summary-of-models">7 Summary of Models</h2>
+<ul>
+<li><strong>Plain CNNs</strong> (e.g., AlexNet): Introduced depth and ReLU activations; used dropout for regularization. Suffered from high parameter counts and training inefficiency due to large fully connected layers.</li>
+<li><strong>GoogLeNet/Inception</strong>: Improved efficiency through parallel convolutional filters and 1×1 convolutions for dimensionality reduction. Introduced Inception modules to extract multi-scale features.</li>
+<li><strong>ResNet</strong>: Tackled the vanishing gradient problem with residual (skip) connections, allowing very deep networks (50+ layers) to be trained effectively.</li>
+<li><strong>Stochastic Depth</strong>: Enhanced ResNets by randomly skipping residual blocks during training, reducing computation and improving generalization while keeping full depth during inference.</li>
+<li><strong>DenseNet</strong>: Connected every layer to all previous ones via feature concatenation. Promoted feature reuse and better gradient flow, reducing parameter redundancy and enabling efficient deep models.</li>
+</ul>
+</section>
+<section id="reference" class="level2">
+<h2 class="anchored" data-anchor-id="reference">8 Reference</h2>
 <p>Gao Huang, Zhuang Liu, Laurens van der Maaten, Kilian Q. Weinberger<br>
 <strong>Densely Connected Convolutional Networks</strong><br>
 <em>CVPR 2017</em><br>
 <a href="https://arxiv.org/abs/1608.06993" class="uri">https://arxiv.org/abs/1608.06993</a></p>
-</section>
-<section id="summary-of-models" class="level3">
-<h3 class="anchored" data-anchor-id="summary-of-models">Summary of models</h3>
-<p>Go over plain CNN, google Net, ResNet and aDenseNet</p>
+<p>Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola Dive into Deep Learning – Chapter 8: Modern Convolutional Neural Networks https://d2l.ai/chapter_convolutional-modern/index.html</p>
+<p>He et al., 2016] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.<br>
+<strong>Deep Residual Learning for Image Recognition.</strong><br>
+<em>Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)</em>, 2016.<br>
+<a href="https://arxiv.org/abs/1512.03385" class="uri">https://arxiv.org/abs/1512.03385</a></p>
 <pre><code></code></pre>
+
 </section>
 </section>
 
