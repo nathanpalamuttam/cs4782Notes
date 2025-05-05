@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.29">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Modern Convnets</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="Notes_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Notes_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="Notes_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Notes_files/libs/quarto-html/popper.min.js"></script>
+<script src="Notes_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Notes_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Notes_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Notes_files/libs/quarto-html/quarto-syntax-highlighting-0815c480559380816a4d1ea211a47e91.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Notes_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Notes_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Notes_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Modern Convnets</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div data-align="center">
+<p><strong>Cornell CS 4/5782</strong></p>
+<p><strong>Spring 2025</strong></p>
+</div>
+<hr>
+<p>Insert overview blurb</p>
+<section id="network-depth" class="level3">
+<h3 class="anchored" data-anchor-id="network-depth">Network Depth</h3>
+<p>Talk about how deeper networks are not always better</p>
+</section>
+<section id="googlenetinception-net" class="level3">
+<h3 class="anchored" data-anchor-id="googlenetinception-net">GoogLeNet/Inception Net</h3>
+<p>Mention image net classification challenge, talk about google net and the inception module</p>
+<section id="inception-module" class="level4">
+<h4 class="anchored" data-anchor-id="inception-module">Inception Module</h4>
+<p>Alternatively have a subheading deep dive into the inception module and how it does dim red</p>
+</section>
+<section id="resnet" class="level4">
+<h4 class="anchored" data-anchor-id="resnet">ResNet</h4>
+</section>
+</section>
+<section id="resnet-residual-network" class="level2">
+<h2 class="anchored" data-anchor-id="resnet-residual-network">ResNet (Residual Network)</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="resnet.png" class="img-fluid figure-img"></p>
+<figcaption>ResNet Diagram</figcaption>
+</figure>
+</div>
+<p>ResNet, or <strong>Residual Network</strong>, is a type of deep neural network architecture introduced by <strong>Kaiming He et al.</strong> in 2015. It was designed to address the <strong>vanishing gradient problem</strong> in very deep networks by introducing <strong>skip connections</strong> (also called <strong>residual connections</strong>).</p>
+<hr>
+<section id="important-note" class="level3">
+<h3 class="anchored" data-anchor-id="important-note">Important Note</h3>
+<p>From here on out, this is what we will be abstracting a convolutional layer to be this: <img src="Conv_Layer_abstraction.jpeg" class="img-fluid" alt="Conv Abstraction Diagram"></p>
+<hr>
+</section>
+<section id="key-idea" class="level3">
+<h3 class="anchored" data-anchor-id="key-idea">Key Idea</h3>
+<p>The main innovation of ResNet is the <strong>residual block</strong>, where the input is passed directly to a deeper layer, skipping one or more layers in between.</p>
+<p>This allows gradients to flow more easily during backpropagation, enabling <strong>very deep networks</strong> (e.g., ResNet-50, ResNet-101, ResNet-152).</p>
+<hr>
+</section>
+<section id="what-is-a-residual-block" class="level3">
+<h3 class="anchored" data-anchor-id="what-is-a-residual-block">What is a Residual Block?</h3>
+<p>A <strong>residual block</strong> is the core component of a ResNet (Residual Network). It enables the training of <strong>very deep neural networks</strong> by allowing information (and gradients) to <strong>flow directly across layers</strong> via <strong>skip connections</strong>.</p>
+<hr>
+<section id="structure-of-a-residual-block" class="level4">
+<h4 class="anchored" data-anchor-id="structure-of-a-residual-block">Structure of a Residual Block</h4>
+<p>A basic residual block consists of:</p>
+<ol type="1">
+<li><strong>Two convolutional layers</strong> .</li>
+<li>A <strong>skip connection</strong> that bypasses these layers and adds the input directly to the output.</li>
+</ol>
+</section>
+</section>
+<section id="residual-connections-and-the-vanishing-gradient-problem" class="level3">
+<h3 class="anchored" data-anchor-id="residual-connections-and-the-vanishing-gradient-problem">Residual Connections and the Vanishing Gradient Problem</h3>
+<p>In a regular deep neural network, each layer transforms its input into an output, often written as:</p>
+</section>
+</section>
+<section id="z-fa" class="level1">
+<h1><span class="math display">\[ z = F(a) \]</span></h1>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Plain_Layer.jpeg" class="img-fluid figure-img"></p>
+<figcaption>Plain Block Diagram</figcaption>
+</figure>
+</div>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(a\)</span> is the input (activation from the previous layer),</li>
+<li><span class="math inline">\(F(a)\)</span> is the output after applying transformations like convolution, batch normalization, and ReLU.</li>
+</ul>
+<p>In <strong>residual networks</strong>, this changes to:</p>
+</section>
+<section id="z-fa-a" class="level1">
+<h1><span class="math display">\[z = F(a) + a\]</span></h1>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Residual_Block.jpeg" class="img-fluid figure-img"></p>
+<figcaption>Residual Block Diagram</figcaption>
+</figure>
+</div>
+<p>This is called a <strong>skip connection</strong> or <strong>residual connection</strong>, because it “skips over” the function <code>F</code> and adds the original input <code>a</code> directly to the output.</p>
+<hr>
+<section id="why-this-helps-with-the-vanishing-gradient-problem" class="level3">
+<h3 class="anchored" data-anchor-id="why-this-helps-with-the-vanishing-gradient-problem">Why This Helps with the Vanishing Gradient Problem</h3>
+<section id="the-vanishing-gradient-problem" class="level4">
+<h4 class="anchored" data-anchor-id="the-vanishing-gradient-problem">The Vanishing Gradient Problem</h4>
+<p>When training very deep networks, gradients (which are used to update weights via backpropagation) can become <strong>very small</strong> as they pass backward through many layers. This causes earlier layers to train very slowly — or not at all.</p>
+<p>In mathematical terms, if you keep multiplying small derivatives (like &lt; 1) across dozens or hundreds of layers, the final product (gradient) can approach zero:</p>
+<p><span class="math display">\[
+\frac{∂L}{∂w} = \frac{∂L}{∂z_n} \times \frac{∂z_n}{∂z_{n-1}} \times \cdots \times \frac{∂z_2}{∂z_1} \times \frac{∂z_1}{∂w}
+\]</span></p>
+</section>
+<section id="how-resnets-solve-this" class="level4">
+<h4 class="anchored" data-anchor-id="how-resnets-solve-this">How Resnets solve this</h4>
+<p>With residual connections, each layer’s output is <span class="math inline">\(z = F(a) + a\)</span>, so during backpropagation, the gradient becomes:</p>
+<p><span class="math display">\[ \frac{∂L}{∂a} = \frac{∂L}{∂z} \times \left( \frac{∂F(a)}{∂a} + I \right) \]</span></p>
+<p>Where <span class="math inline">\(I\)</span> is the identity matrix from the derivative of <span class="math inline">\(a\)</span> (since <span class="math inline">\(∂(a)/∂a = I\)</span>).</p>
+<p>This means that even if the gradient of <span class="math inline">\(F(a)\)</span> vanishes (i.e., becomes very small), the presence of the <strong>identity term</strong> ensures that <strong>some gradient always flows through</strong>:</p>
+<ul>
+<li>The shortcut path ensures <strong>direct gradient flow</strong> from later layers back to earlier layers.</li>
+<li>This helps <strong>preserve gradient magnitude</strong>, preventing them from vanishing.</li>
+<li>As a result, <strong>deep networks can be trained effectively</strong> without performance degradation.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="summary" class="level3">
+<h3 class="anchored" data-anchor-id="summary">Summary</h3>
+<ul>
+<li>Regular block: <span class="math inline">\(z = F(a)\)</span> → gradients can vanish.</li>
+<li>Residual block: <span class="math inline">\(z = F(a) + a\)</span> → gradients include both <span class="math inline">\(∂F(a)\)</span> and the identity path.</li>
+<li>Skip connections create <strong>highway routes</strong> for gradient flow.</li>
+<li>This enables the successful training of networks with <strong>50, 100, or even 1000+ layers</strong>.</li>
+</ul>
+</section>
+</section>
+<section id="stochastic-depth" class="level1">
+<h1>Stochastic Depth</h1>
+<blockquote class="blockquote">
+<p><em>“Can we train <em>very</em> deep ResNets without paying the full computational cost at every iteration?”</em><br>
+<strong>Stochastic depth</strong> answers <em>yes</em> by <strong>randomly dropping entire residual blocks during training</strong> — making the network shallower on‑the‑fly, yet keeping its full depth at inference.</p>
+</blockquote>
+<hr>
+<section id="why-do-we-need-stochastic-depth" class="level3">
+<h3 class="anchored" data-anchor-id="why-do-we-need-stochastic-depth">1  Why Do We Need Stochastic Depth?</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 59%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Challenge in Very‑Deep Nets</th>
+<th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Longer forward pass</td>
+<td>Slower training iterations</td>
+</tr>
+<tr class="even">
+<td>Longer backward pass</td>
+<td>Smaller batch sizes (GPU memory)</td>
+</tr>
+<tr class="odd">
+<td>Vanishing/exploding gradients (even with skips)</td>
+<td>Optimization difficulty</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Insight:</strong> We <em>already</em> know ResNets work because the identity skip path lets the network behave like an ensemble of shallower sub‑networks.<br>
+<em>So why not explicitly <strong>train</strong> an ensemble of these shallower nets?</em></p>
+<hr>
+</section>
+<section id="highlevel-idea" class="level3">
+<h3 class="anchored" data-anchor-id="highlevel-idea">2  High‑Level Idea</h3>
+<ol type="1">
+<li><strong>During training</strong> each residual block is <strong>dropped</strong> (skipped) with probability <span class="math inline">\(p_l\)</span>, where <span class="math inline">\(l\)</span> is the index of the residual block.</li>
+<li><strong>During inference</strong> <em>all</em> blocks are kept (i.e.&nbsp;the <strong>full depth</strong> is used).</li>
+<li>To keep the expected activations consistent, we <strong>scale</strong> surviving blocks.</li>
+</ol>
+<hr>
+</section>
+<section id="notation" class="level3">
+<h3 class="anchored" data-anchor-id="notation">3  Notation</h3>
+<p>Let’s recall the basic structure of a residual block. As discussed earlier:</p>
+<p><span class="math display">\[
+z = F(a) + a
+\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(a\)</span> is the input to the block (activation from the previous layer)</li>
+<li><span class="math inline">\(F(a)\)</span> is a sequence of operations (e.g., convolution → batch norm → ReLU)</li>
+<li><span class="math inline">\(z\)</span> is the output of the block</li>
+<li><span class="math inline">\(F\)</span> contains learnable parameters <span class="math inline">\(\\theta\)</span></li>
+</ul>
+<p>In <strong>stochastic depth</strong>, we introduce a <strong>random binary variable</strong> We define a random binary variable:</p>
+<p><span class="math display">\[
+b \sim \text{Bernoulli}(1 - p)
+\]</span></p>
+<p>that determines whether to apply the residual function ( F(a) ) or skip it entirely during <strong>training</strong>.</p>
+<p>So during training, the residual block becomes:</p>
+<p><span class="math display">\[
+z =
+\begin{cases}
+F(a) + a &amp; \text{if } b = 1 \quad \text{(block kept)} \\[6pt]
+a &amp; \text{if } b = 0 \quad \text{(block dropped)}
+\end{cases}
+\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(p \in [0, 1]\)</span> is the <strong>drop probability</strong>,</li>
+<li><span class="math inline">\(b \sim \text{Bernoulli}(1 - p)\)</span> controls whether the block is <strong>active</strong> in this forward pass.</li>
+</ul>
+<p>During <strong>inference</strong>, we use all blocks but scale the residual output by the <strong>expected survival rate</strong> <span class="math inline">\((1 - p)\)</span> to match training statistics:</p>
+<p><span class="math display">\[
+z = (1 - p) \cdot F(a) + a
+\]</span></p>
+<p>This ensures that the <strong>expected output</strong> of the block is consistent between training and test time.</p>
+</section>
+<section id="stochastic-depth-formulation" class="level3">
+<h3 class="anchored" data-anchor-id="stochastic-depth-formulation">4  Stochastic Depth Formulation</h3>
+<section id="probability-scheduling" class="level4">
+<h4 class="anchored" data-anchor-id="probability-scheduling">4.1&nbsp;&nbsp;Probability Scheduling</h4>
+<p>A common way to define the drop probability <span class="math inline">\(p\)</span> for each layer is to make it <strong>increase linearly with depth</strong>. For a network with <span class="math inline">\(L\)</span> residual blocks, the drop probability for the <span class="math inline">\(l^{\text{th}}\)</span> block is:</p>
+<p><span class="math display">\[
+p_l = \frac{l}{L} \cdot p_{\text{max}}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(p_{\text{max}}\)</span> is the <strong>maximum</strong> drop probability at the final layer (e.g.&nbsp;0.5),</li>
+<li><span class="math inline">\(l\)</span> is the block index (starting from 1).</li>
+</ul>
+<p>This means <strong>early layers are kept more often</strong>, and <strong>deeper layers are dropped more often</strong> during training — which aligns well with how gradients behave in deep networks.</p>
+<hr>
+</section>
+<section id="scaling-for-inference" class="level4">
+<h4 class="anchored" data-anchor-id="scaling-for-inference">4.2&nbsp;&nbsp;Scaling for Inference</h4>
+<p>During <strong>inference</strong>, all blocks are used. To maintain consistency with training-time activations, we scale the residual output by the <strong>expected keep probability</strong> ( 1 - p ):</p>
+<p><span class="math display">\[
+z = (1 - p) \cdot F(a) + a
+\tag{2}
+\]</span></p>
+<p>This ensures that the <strong>expected value of the output</strong> matches what the model saw during training.</p>
+<hr>
+</section>
+</section>
+<section id="backpropagation-sketch" class="level3">
+<h3 class="anchored" data-anchor-id="backpropagation-sketch">5  Backpropagation Sketch</h3>
+<p>In stochastic depth, <strong>only the residual blocks that are kept (i.e., not dropped)</strong> contribute to the gradient during training.</p>
+<p>Let:</p>
+<ul>
+<li><span class="math inline">\(a\)</span> be the input to the residual block,</li>
+<li><span class="math inline">\(F(a; w)\)</span> be the residual function — a learnable transformation applied to <span class="math inline">\(a\)</span>, parameterized by weights <span class="math inline">\(w\)</span>,</li>
+<li><span class="math inline">\(z = F(a; w) + a\)</span> be the output when the block is kept,</li>
+<li><span class="math inline">\(b \sim \text{Bernoulli}(1 - p)\)</span> be the binary variable that determines whether the block is used,</li>
+<li><span class="math inline">\(w\)</span> be the weights of the residual function <span class="math inline">\(F(a)\)</span>.</li>
+</ul>
+<p>Then the gradient of the loss with respect to the block’s parameters is:</p>
+<p><span class="math display">\[
+\frac{\partial L}{\partial w} =
+\begin{cases}
+\frac{\partial L}{\partial z} \cdot \frac{\partial F(a; w)}{\partial w}, &amp; b = 1 \quad \text{(block kept)} \\[6pt]
+0, &amp; b = 0 \quad \text{(block dropped)}
+\end{cases}
+\]</span></p>
+<p>Only the active blocks receive gradients and are updated. As a result, each training batch effectively updates a <strong>random sub-network</strong> — acting like a built-in <strong>model ensemble</strong> and a form of <strong>strong regularization</strong>.</p>
+<hr>
+</section>
+<section id="intuition-analogy" class="level3">
+<h3 class="anchored" data-anchor-id="intuition-analogy">6  Intuition &amp; Analogy</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 21%">
+<col style="width: 57%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Technique</th>
+<th>Drops <em>what</em>?</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Dropout</strong></td>
+<td>Individual neurons</td>
+<td>Prevent co‑adaptation</td>
+</tr>
+<tr class="even">
+<td><strong>Stochastic Depth</strong></td>
+<td>Whole residual blocks</td>
+<td>Reduce depth <strong>per iteration</strong> and act as model ensemble</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p>Think of it as <strong>“Drop‑ResBlocks”</strong> instead of “Drop‑Neurons”.</p>
+</blockquote>
+<hr>
+</section>
+<section id="practical-impact" class="level3">
+<h3 class="anchored" data-anchor-id="practical-impact">7  Practical Impact</h3>
+<ul>
+<li><strong>Faster training</strong> — fewer blocks <span class="math inline">\(\Rightarrow\)</span> shorter forward/backward pass per iteration.</li>
+<li><strong>Better generalization</strong> — acts like averaging an exponential number of shallower ResNets.</li>
+<li><strong>Ease of implementation</strong> — only a few lines in popular DL libraries.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="densenet" class="level1">
+<h1>DenseNet</h1>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Densenet.png" class="img-fluid figure-img"></p>
+<figcaption>Densenet Diagram</figcaption>
+</figure>
+</div>
+<blockquote class="blockquote">
+<p><em>“What if, instead of <strong>adding</strong> features like in ResNets, we simply <strong>concatenate</strong> them so every layer has direct access to all earlier information?”</em><br>
+<strong>DenseNets</strong> answer <em>yes</em> by <strong>densely connecting</strong> each layer to <strong>every other</strong> layer in a feed-forward fashion, dramatically improving information and gradient flow.</p>
+</blockquote>
+<hr>
+<section id="why-do-we-need-densenets" class="level3">
+<h3 class="anchored" data-anchor-id="why-do-we-need-densenets">1 Why Do We Need DenseNets?</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 55%">
+<col style="width: 44%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Challenge in Very‑Deep Nets</th>
+<th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Vanishing/exploding gradients (even with skips)</td>
+<td>Optimization difficulty</td>
+</tr>
+<tr class="even">
+<td>Feature reuse is limited</td>
+<td>Redundant parameters, bigger models</td>
+</tr>
+<tr class="odd">
+<td>Parameter growth vs.&nbsp;depth</td>
+<td>Deeper nets often become memory-hungry</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Insight:</strong> If each layer could <strong>see</strong> all earlier feature maps, it could <strong>reuse</strong> them instead of relearning similar filters, while gradients would flow through many <strong>short paths</strong>.</p>
+<hr>
+</section>
+<section id="high-level-idea" class="level3">
+<h3 class="anchored" data-anchor-id="high-level-idea">2 High-Level Idea</h3>
+<ol type="1">
+<li><strong>Dense Connectivity:</strong> In a DenseNet, each layer <span class="math inline">\(l\)</span> receives as input the <strong>concatenation</strong> of the feature maps produced by <strong>all preceding layers</strong>:</li>
+</ol>
+<p><span class="math display">\[
+a_l = [z_0, z_1, \dots, z_{l-1}]
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(z_i\)</span> is the output (feature map) of the <span class="math inline">\(i^\text{th}\)</span> layer</li>
+<li><span class="math inline">\(a_l\)</span> is the input to the <span class="math inline">\(l^\text{th}\)</span> layer</li>
+<li><span class="math inline">\([\,\cdot\,]\)</span> denotes <strong>concatenation along the channel dimension</strong></li>
+</ul>
+<p>This structure allows each layer to directly access the features learned by all previous layers, promoting <strong>feature reuse</strong> and improving <strong>gradient flow</strong>.</p>
+<ol start="2" type="1">
+<li><p><strong>Composite function:</strong> Each layer applies a transformation:</p>
+<p><span class="math display">\[
+z_l = H_l(a_l)
+\]</span></p>
+<p>where <span class="math inline">\(H_l\)</span> is typically <strong>BatchNorm → ReLU → 3×3 Conv</strong>.</p></li>
+<li><p><strong>Linear growth:</strong> The number of new feature maps added at each layer is a small <strong>growth rate</strong> <span class="math inline">\(k\)</span>.</p></li>
+</ol>
+<hr>
+</section>
+<section id="notation-1" class="level3">
+<h3 class="anchored" data-anchor-id="notation-1">3 Notation</h3>
+<ul>
+<li><span class="math inline">\(z_0\)</span>: initial input (e.g., output of a stem convolution layer)</li>
+<li><span class="math inline">\(a_l\)</span>: concatenated input to layer <span class="math inline">\(l\)</span></li>
+<li><span class="math inline">\(H_l(\cdot)\)</span>: composite function of layer <span class="math inline">\(l\)</span> with weights <span class="math inline">\(w_l\)</span></li>
+<li><span class="math inline">\(z_l\)</span>: output feature maps of layer <span class="math inline">\(l\)</span></li>
+<li><span class="math inline">\(k\)</span>: growth rate (number of new feature maps each layer adds)</li>
+</ul>
+<p>A dense block with <span class="math inline">\(L\)</span> layers generates:</p>
+<p><span class="math display">\[
+a_{l+1} = [a_l, z_l] \quad \text{for } l = 0, \dots, L-1
+\]</span></p>
+<p>The total number of feature maps after the block is approximately:</p>
+<p><span class="math display">\[
+\text{Channels} = \text{input channels} + k \cdot L
+\]</span></p>
+<hr>
+</section>
+<section id="dense-block-formulation" class="level3">
+<h3 class="anchored" data-anchor-id="dense-block-formulation">4 Dense Block Formulation</h3>
+<p>Inside a dense block:</p>
+<p><span class="math display">\[
+z_l = H_l(a_l; w_l), \qquad a_{l+1} = [a_l, z_l]
+\]</span></p>
+<p>Because DenseNets use <strong>concatenation</strong> instead of addition, feature dimensionality grows with depth.<br>
+To prevent memory from growing unboundedly, <strong>transition layers</strong> are added between dense blocks:</p>
+<p><span class="math display">\[
+\text{Transition: BN → 1×1 Conv → AvgPool}
+\]</span></p>
+<p>The 1×1 convolution acts as a compression step, reducing the number of channels.<br>
+This is often done with a compression factor <span class="math inline">\(\theta_{\text{comp}} \in (0, 1]\)</span>.</p>
+<hr>
+</section>
+<section id="backpropagation-sketch-1" class="level3">
+<h3 class="anchored" data-anchor-id="backpropagation-sketch-1">5 Backpropagation Sketch</h3>
+<p>Gradients flow through <strong>multiple direct paths</strong> due to concatenation:</p>
+<ol type="1">
+<li><strong>Local path</strong>: layer <span class="math inline">\(l\)</span> contributes to <span class="math inline">\(z_l\)</span> via <span class="math inline">\(w_l\)</span></li>
+<li><strong>Shortcut paths</strong>: since <span class="math inline">\(z_l\)</span> appears in <span class="math inline">\(a_m\)</span> for all <span class="math inline">\(m &gt; l\)</span>, its gradient includes contributions from all later layers.</li>
+</ol>
+<p>Gradient with respect to weights <span class="math inline">\(w_l\)</span>:</p>
+<p><span class="math display">\[
+\frac{\partial L}{\partial w_l} = \frac{\partial L}{\partial z_l} \cdot \frac{\partial H_l(a_l;\, w_l)}{\partial w_l}
+\]</span></p>
+<p>Gradient of <span class="math inline">\(z_l\)</span> accumulates contributions from every future layer that uses it:</p>
+<p><span class="math display">\[
+\frac{\partial L}{\partial z_l} =
+\sum_{m = l+1}^{L}
+\frac{\partial L}{\partial a_m} \cdot \frac{\partial a_m}{\partial z_l}
+\]</span></p>
+<p>This design ensures <strong>better gradient flow</strong> and <strong>deep supervision</strong>.</p>
+<hr>
+</section>
+<section id="intuition-analogy-1" class="level3">
+<h3 class="anchored" data-anchor-id="intuition-analogy-1">6 Intuition &amp; Analogy</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 19%">
+<col style="width: 28%">
+<col style="width: 35%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Architecture</th>
+<th>Connection Type</th>
+<th>What Flows Easily?</th>
+<th>Analogy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ResNet</td>
+<td>Addition skip</td>
+<td>Gradient magnitude</td>
+<td>“Highway” for gradients</td>
+</tr>
+<tr class="even">
+<td>DenseNet</td>
+<td>Concatenation</td>
+<td>Gradients and features</td>
+<td>“Bus route with many stops”</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p>DenseNets behave like <strong>feature reuse engines</strong>, where each layer adds only new, complementary information.</p>
+</blockquote>
+<hr>
+</section>
+<section id="practical-impact-1" class="level3">
+<h3 class="anchored" data-anchor-id="practical-impact-1">7 Practical Impact</h3>
+<ul>
+<li><strong>Parameter-efficient</strong>: fewer total weights compared to ResNets of similar accuracy</li>
+<li><strong>Strong regularization</strong>: encourages feature reuse and reduces overfitting</li>
+<li><strong>Improved gradient flow</strong>: multiple short paths to output</li>
+<li><strong>Memory considerations</strong>: more feature maps → use compression and checkpointing</li>
+</ul>
+<hr>
+</section>
+<section id="reference" class="level3">
+<h3 class="anchored" data-anchor-id="reference">8 Reference</h3>
+<p>Gao Huang, Zhuang Liu, Laurens van der Maaten, Kilian Q. Weinberger<br>
+<strong>Densely Connected Convolutional Networks</strong><br>
+<em>CVPR 2017</em><br>
+<a href="https://arxiv.org/abs/1608.06993" class="uri">https://arxiv.org/abs/1608.06993</a></p>
+</section>
+<section id="summary-of-models" class="level3">
+<h3 class="anchored" data-anchor-id="summary-of-models">Summary of models</h3>
+<p>Go over plain CNN, google Net, ResNet and aDenseNet</p>
+<pre><code></code></pre>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
